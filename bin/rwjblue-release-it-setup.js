@@ -212,6 +212,10 @@ function isYarn() {
   return fs.existsSync('yarn.lock');
 }
 
+function isPnpm() {
+  return fs.existsSync('pnpm-lock.yaml');
+}
+
 async function installDependencies() {
   if (labelsOnly || skipInstall) {
     return;
@@ -219,6 +223,8 @@ async function installDependencies() {
 
   if (isYarn()) {
     await execa('yarn');
+  } else if (isPnpm()) {
+    await execa('pnpm', ['install']);
   } else {
     await execa('npm', ['install']);
   }
@@ -258,7 +264,9 @@ async function main() {
         encoding: 'utf8',
       });
 
-      let dependencyInstallReplacementValue = isYarn() ? 'yarn install' : 'npm install';
+      let dependencyInstallReplacementValue = `${
+        isYarn() ? 'yarn' : isPnpm() ? 'pnpm' : 'npm'
+      } install`;
 
       fs.writeFileSync(
         'RELEASE.md',

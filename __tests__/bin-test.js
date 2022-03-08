@@ -471,12 +471,12 @@ describe('main binary', function () {
   });
 
   describe('RELEASE.md', function () {
-    function expectedReleaseContents(isYarn) {
+    function expectedReleaseContents(packageManager = 'npm') {
       let releaseContents = fs.readFileSync(path.join(__dirname, '..', 'release-template.md'), {
         encoding: 'utf8',
       });
 
-      let dependencyInstallReplacementValue = isYarn ? 'yarn install' : 'npm install';
+      let dependencyInstallReplacementValue = `${packageManager} install`;
 
       return releaseContents.replace('{{INSTALL_DEPENDENCIES}}', dependencyInstallReplacementValue);
     }
@@ -487,7 +487,7 @@ describe('main binary', function () {
       await exec(['--no-install', '--no-label-updates']);
 
       expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
-        expectedReleaseContents(false)
+        expectedReleaseContents('npm')
       );
     });
 
@@ -499,7 +499,19 @@ describe('main binary', function () {
       await exec(['--no-install', '--no-label-updates']);
 
       expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
-        expectedReleaseContents(true)
+        expectedReleaseContents('yarn')
+      );
+    });
+
+    it('adds RELEASE.md to repo when pnpm-lock.yaml exists', async function () {
+      fs.writeFileSync('pnpm-lock.yaml', '', { encoding: 'utf-8' });
+
+      expect(fs.existsSync('RELEASE.md')).toBeFalsy();
+
+      await exec(['--no-install', '--no-label-updates']);
+
+      expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
+        expectedReleaseContents('pnpm')
       );
     });
 
@@ -515,7 +527,18 @@ describe('main binary', function () {
         await exec(['--no-install', '--no-label-updates', '--update']);
 
         expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
-          expectedReleaseContents(true)
+          expectedReleaseContents('yarn')
+        );
+      });
+
+      it('updates RELEASE.md when pnpm-lock.yaml exists', async function () {
+        fs.writeFileSync('pnpm-lock.yaml', '', { encoding: 'utf-8' });
+        fs.writeFileSync('RELEASE.md', 'lololol', 'utf8');
+
+        await exec(['--no-install', '--no-label-updates', '--update']);
+
+        expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
+          expectedReleaseContents('pnpm')
         );
       });
 
@@ -525,7 +548,7 @@ describe('main binary', function () {
         await exec(['--no-install', '--no-label-updates', '--update']);
 
         expect(fs.readFileSync('RELEASE.md', { encoding: 'utf8' })).toBe(
-          expectedReleaseContents(false)
+          expectedReleaseContents('npm')
         );
       });
 
